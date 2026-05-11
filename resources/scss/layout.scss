@@ -155,6 +155,23 @@ th {
   row-gap: 1em;
 }
 
+.potential-plot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.potential-plot-panel h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .potential-plot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .header-icon {
   padding-right: 0.35em;
   color: var(--bs-primary);

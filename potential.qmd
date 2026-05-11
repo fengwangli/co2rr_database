@@ -1,0 +1,202 @@
+{{< include _load-data-overview.qmd >}}
+{{< include components/_style.qmd >}}
+{{< include components/_tol.qmd >}}
+
+```{ojs prelims}
+//| output: false
+
+Plot = import("https://esm.sh/@observablehq/plot@0.6.17")
+
+co2rr = transpose(co2rr_)
+toNumber = v => v == null || v === "" ? NaN : Number(v)
+data = co2rr.map(d => ({
+  ...d,
+  Product: d.Product || "Unknown",
+  FE: toNumber(d.FE),
+  J: toNumber(d.J),
+  Year: toNumber(d.Year),
+  Stability: toNumber(d.Stability),
+  Efull: toNumber(d.Efull),
+  Ecathode: toNumber(d.Ecathode),
+  REType: d["RE type"] || "NA"
+}))
+
+yearExtent = d3.extent(data.filter(d => Number.isFinite(d.Year)), d => d.Year)
+durationExtent = d3.extent(data.filter(d => Number.isFinite(d.Stability)), d => d.Stability)
+logDurationExtent = durationExtent.map(Math.log)
+products = Array.from(new Set(data.map(d => d.Product))).sort(d3.ascending)
+potentialTypes = ["Efull", "Ecathode vs SCE", "Ecathode vs RHE", "Ecathode vs Ag/AgCl"]
+scheme = tol.QualMuted
+
+potentialRows = data.flatMap(d => {
+  const rows = []
+  if (Number.isFinite(d.Efull)) {
+    rows.push({ ...d, PotentialType: "Efull", Potential: d.Efull })
+  }
+  if (Number.isFinite(d.Ecathode)) {
+    if (d.REType === "RHE") {
+      rows.push({ ...d, PotentialType: "Ecathode vs RHE", Potential: d.Ecathode })
+    } else if (d.REType === "Ag/AgCl") {
+      rows.push({ ...d, PotentialType: "Ecathode vs Ag/AgCl", Potential: d.Ecathode })
+    } else if (d.REType === "SCE") {
+      rows.push({ ...d, PotentialType: "Ecathode vs SCE", Potential: d.Ecathode })
+    }
+  }
+  return rows
+})
+
+radiusScale = (value, extent) => {
+  if (!Number.isFinite(value) || extent[0] === extent[1]) return 5
+  return 4 + 8 * ((value - extent[0]) / (extent[1] - extent[0]))
+}
+```
+
+:::::: {.column-screen-inset}
+
+# Potential dependence
+
+This page shows the dependence of current density and Faradaic efficiency on potential. Different studies may report the potential using $E_\mathrm{hull}$ or $E_\mathrm{cathode}$, with reference electrodes including SCE, RHE, and Ag/AgCl.
+
+::::: {layout="[ [25,75] ]"}
+
+:::: {.panel-input}
+
+{{< bi filter >}} _Filter by..._
+
+::: {.side-inputs}
+::: {.filters-container}
+
+```{ojs filter-year}
+viewof startYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+```
+
+```{ojs filter-duration}
+viewof minLogDuration = Inputs.range(logDurationExtent, { label: "Min duration (ln h)", step: 0.1, value: logDurationExtent[0] })
+```
+
+::: {.callout-note collapse="false"}
+## {{< bi diagram-3 class=header-icon >}}Product
+
+```{ojs filter-product}
+viewof selectedProducts = Inputs.checkbox(products, { value: products })
+```
+:::
+
+::: {.callout-note collapse="false"}
+## {{< bi lightning-charge class=header-icon >}}Potential Type
+
+```{ojs filter-potential-type}
+viewof selectedPotentialTypes = Inputs.checkbox(potentialTypes, { value: potentialTypes })
+```
+:::
+
+::: {.callout-note collapse="false"}
+## {{< bi circle class=header-icon >}}Size
+
+```{ojs size-option}
+viewof sizeVar = Inputs.select(new Map([["Year", "Year"], ["Duration", "Stability"]]), { label: "Size", value: "Year" })
+```
+:::
+
+::: {.callout-note collapse="false"}
+## {{< bi graph-up class=header-icon >}}Y Axis
+
+```{ojs y-option}
+viewof yVar = Inputs.select(new Map([["Faradaic efficiency, FE (%)", "FE"], ["Current density, J (mA cm-2)", "J"]]), { label: "Y axis", value: "FE" })
+```
+:::
+
+:::
+:::
+
+::::
+
+:::: {.panel-fill}
+
+```{ojs potential-filtered}
+//| output: false
+
+filteredPotentialRows = potentialRows.filter(d =>
+  selectedProducts.includes(d.Product) &&
+  selectedPotentialTypes.includes(d.PotentialType) &&
+  d.Year >= startYear &&
+  d.Stability >= Math.exp(minLogDuration) &&
+  Number.isFinite(d.Potential) &&
+  Number.isFinite(d[yVar])
+)
+
+sizeExtent = sizeVar === "Stability"
+  ? d3.extent(potentialRows.filter(d => Number.isFinite(d.Stability)), d => Math.log(d.Stability))
+  : d3.extent(potentialRows.filter(d => Number.isFinite(d.Year)), d => d.Year)
+
+pointRadius = d => sizeVar === "Stability"
+  ? radiusScale(Math.log(d.Stability), sizeExtent)
+  : radiusScale(d.Year, sizeExtent)
+
+yLabels = ({
+  FE: "Faradaic efficiency, FE (%)",
+  J: "Current density, J (mA cm-2)"
+})
+```
+
+```{ojs potential-plots}
+plotForPotential = type => {
+  const plotRows = filteredPotentialRows.filter(d => d.PotentialType === type)
+  return html`<div class="potential-plot-panel">
+    <h3>${type}</h3>
+    ${Plot.plot({
+      style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
+      width: 460,
+      height: 320,
+      marginLeft: 60,
+      marginRight: 20,
+      marginTop: 15,
+      marginBottom: 45,
+      x: { label: "Potential (V)", grid: true, line: true },
+      y: { label: yLabels[yVar], grid: true, line: true },
+      r: { type: "identity" },
+      color: {
+        label: "Product",
+        range: scheme,
+        legend: true,
+        className: "color-legend"
+      },
+      marks: [
+        Plot.dot(plotRows, {
+          x: "Potential",
+          y: yVar,
+          fill: "Product",
+          stroke: "white",
+          strokeWidth: 0.6,
+          r: pointRadius,
+          fillOpacity: 0.85
+        }),
+        Plot.tip(plotRows, Plot.pointer({
+          x: "Potential",
+          y: yVar,
+          title: d => [
+            `Product: ${d.Product}`,
+            `Potential: ${d.Potential.toFixed(3)} V`,
+            `Potential type: ${d.PotentialType}`,
+            `FE: ${d.FE}%`,
+            `J: ${d.J} mA cm-2`,
+            Number.isFinite(d.Year) ? `Year: ${d.Year}` : null,
+            Number.isFinite(d.Stability) ? `Stability: ${d.Stability} h` : null,
+            d.REType !== "NA" ? `RE type: ${d.REType}` : null,
+            d.Reference ? `Reference: ${d.Reference}` : null
+          ].filter(Boolean).join("\n")
+        }))
+      ]
+    })}
+  </div>`
+}
+
+visibleTypes = potentialTypes.filter(t => selectedPotentialTypes.includes(t))
+html`<div class="potential-plot-grid">${visibleTypes.map(plotForPotential)}</div>`
+```
+
+::::
+
+:::::
+
+::::::

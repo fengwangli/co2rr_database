@@ -2,12 +2,16 @@
 co2rr <- readr::read_csv("resources/data/co2rr.csv", show_col_types = FALSE) |>
   dplyr::rename(
     FE = `FE (%)`,
-    J = `J (mA cm-2)`
+    J = `J (mA cm-2)`,
+    Efull = dplyr::any_of(c("Efull (V)", "Efull(V)")),
+    Ecathode = dplyr::any_of(c("Ecathode (V)", "Ecathode"))
   ) |>
   dplyr::mutate(
     FE = readr::parse_number(as.character(FE)),
     J = readr::parse_number(as.character(J)),
     Stability = readr::parse_number(as.character(`Stability (h)`)),
+    Efull = readr::parse_number(as.character(Efull)),
+    Ecathode = readr::parse_number(as.character(Ecathode)),
     Year = suppressWarnings(as.integer(Year))
   )
 
