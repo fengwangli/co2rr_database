@@ -23,6 +23,9 @@ data = co2rr
 plotData = data.filter(d => Number.isFinite(d.FE) && Number.isFinite(d.J))
 scheme = tol.QualMuted
 default_color = scheme[0]
+yearExtent = d3.extent(data.filter(d => Number.isFinite(d.Year)), d => d.Year)
+durationExtent = d3.extent(data.filter(d => Number.isFinite(d.Stability)), d => d.Stability)
+logDurationExtent = durationExtent.map(Math.log)
 ```
 
 :::: {.column-screen-inset}
@@ -77,8 +80,28 @@ html`<div class="display-box-container">${boxes}</div>`
 
 ### Sample Count by Product
 
+::: {.plot-inputs}
+
+```{ojs product-count-filter}
+viewof countStartYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+```
+
+::: {.duration-filter-control}
+
+```{ojs duration-count-filter}
+viewof countMinLogDuration = Inputs.range(logDurationExtent, { label: "Min duration (ln h)", step: 0.1, value: logDurationExtent[0] })
+```
+
+:::
+
+:::
+
 ```{ojs product-counts}
 marginLeft = 110
+filteredCountData = data.filter(d =>
+  d.Year >= countStartYear &&
+  d.Stability >= Math.exp(countMinLogDuration)
+)
 
 Plot.plot({
   style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
@@ -91,7 +114,7 @@ Plot.plot({
   y: { label: null, tickSize: 0, tickPadding: 4 },
   color: { range: scheme },
   marks: [
-    Plot.barX(data, Plot.groupY(
+    Plot.barX(filteredCountData, Plot.groupY(
       { x: "count" },
       {
         y: "Product",
@@ -100,7 +123,7 @@ Plot.plot({
         inset: 1
       }
     )),
-    Plot.textX(data, Plot.groupY(
+    Plot.textX(filteredCountData, Plot.groupY(
       { x: "count", text: "count" },
       {
         y: "Product",
@@ -121,7 +144,40 @@ Plot.plot({
 
 ### Faradaic Efficiency vs Current Density
 
+::: {.plot-inputs}
+
+```{ojs reaction-filter}
+productOptions = new Map([["All products", "All"], ...Array.from(new Set(data.map(d => d.Product))).sort(d3.ascending).map(d => [d, d])])
+viewof selectedProduct = Inputs.select(productOptions, { label: "Product" })
+```
+
+```{ojs year-filter}
+viewof startYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+```
+
+::: {.duration-filter-control}
+
+```{ojs duration-filter}
+viewof minLogDuration = Inputs.range(logDurationExtent, { label: "Min duration (ln h)", step: 0.1, value: logDurationExtent[0] })
+```
+
+:::
+
+:::
+
 ```{ojs fe-j-scatter}
+filteredPlotData = plotData.filter(d =>
+  (selectedProduct === "All" || d.Product === selectedProduct) &&
+  d.Year >= startYear &&
+  d.Stability >= Math.exp(minLogDuration)
+)
+
+yearDomain = d3.extent(plotData.filter(d => Number.isFinite(d.Year)), d => d.Year)
+radiusForYear = d => {
+  if (!Number.isFinite(d.Year) || yearDomain[0] === yearDomain[1]) return 5
+  return 5 + 5 * ((d.Year - yearDomain[0]) / (yearDomain[1] - yearDomain[0]))
+}
+
 Plot.plot({
   style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
   width: 0.5 * width,
@@ -131,6 +187,7 @@ Plot.plot({
   marginLeft: 60,
   x: { label: "Faradaic efficiency, FE (%)", grid: true, line: true },
   y: { label: "Current density, J (mA cm-2)", grid: true, line: true },
+  r: { type: "identity" },
   color: {
     legend: true,
     label: "Product",
@@ -138,23 +195,25 @@ Plot.plot({
     className: "color-legend"
   },
   marks: [
-    Plot.dot(plotData, {
+    Plot.dot(filteredPlotData, {
       x: "FE",
       y: "J",
       fill: "Product",
       stroke: "white",
       strokeWidth: 0.6,
-      r: 4,
+      r: radiusForYear,
       fillOpacity: 0.85
     }),
-    Plot.tip(plotData, Plot.pointer({
+    Plot.tip(filteredPlotData, Plot.pointer({
       x: "FE",
       y: "J",
       title: d => [
         `Product: ${d.Product}`,
         `FE: ${d.FE}%`,
         `J: ${d.J} mA cm-2`,
-        Number.isFinite(d.Year) ? `Year: ${d.Year}` : null
+        Number.isFinite(d.Year) ? `Year: ${d.Year}` : null,
+        Number.isFinite(d.Stability) ? `Stability: ${d.Stability} h` : null,
+        d.Reference ? `Reference: ${d.Reference}` : null
       ].filter(Boolean).join("\n")
     }))
   ]

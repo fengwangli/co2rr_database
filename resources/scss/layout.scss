@@ -68,6 +68,20 @@ form > label, .label:has(+ .form) {
 
 .plot-inputs form {
   width: unset !important;
+  align-items: flex-start;
+}
+
+.plot-inputs form:has(input[type="range"]) {
+  min-width: 15rem;
+}
+
+.plot-inputs input[type="number"] {
+  min-width: 5rem;
+}
+
+.plot-inputs form > label,
+.plot-inputs .label {
+  white-space: nowrap;
 }
 
 .quarto-layout-row {

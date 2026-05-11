@@ -1,4 +1,4 @@
-Product,Year,FE (%),J (mA cm-2),Efull(V),Ecathode,RE type,Stability (h),Reference
+Product,Year,FE (%),J (mA cm-2),Efull (V),Ecathode (V),RE type,Stability (h),Reference
 CO,2025,80,100,3.4,,,4500,"Hao, S.; Elgazzar, A.; Zhang, S.-K.; Wi, T.-U.; Chen, F.-Y.; Feng, Y.; Zhu, P.; Wang, H. Acid-Humidified CO2 Gas Input for Stable Electrochemical CO2 Reduction Reaction. Science 2025, 388 (6752), eadr3834. https://doi.org/10.1126/science.adr3834. "
 CO,2025,90,100,3.5,,,1000,"Hao, S.; Elgazzar, A.; Ravi, N.; Wi, T.-U.; Zhu, P.; Feng, Y.; Xia, Y.; Chen, F.-Y.; Shan, X.; Wang, H. Improving the Operational Stability of Electrochemical CO2 Reduction Reaction via Salt Precipitation Understanding and Management. Nat. Energy 2025, 10 (2), 266-C277. https://doi.org/10.1038/s41560-024-01695-4. "
 CO,2026,88,66.67,,,,1000,Kilowatt-scale alkali-cation-free CO2 electrolysis via accelerating mass transfer | Nature Communications. https://www.nature.com/articles/s41467-026-69175-9 (accessed 2026-04-13). 
