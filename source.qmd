@@ -94,7 +94,23 @@ fullTooltip = d => [
 ```
 
 ```{ojs source-plot}
-Plot.plot({
+copyReference = async text => {
+  if (!text) return
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const textarea = document.createElement("textarea")
+  textarea.value = text
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand("copy")
+  textarea.remove()
+}
+
+sourcePlot = Plot.plot({
   style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
   width,
   height: 520,
@@ -128,6 +144,13 @@ Plot.plot({
     }))
   ]
 })
+
+d3.select(sourcePlot)
+  .selectAll("circle")
+  .style("cursor", d => d?.Reference ? "copy" : null)
+  .on("click", (event, d) => copyReference(d?.Reference))
+
+sourcePlot
 ```
 
 :::
