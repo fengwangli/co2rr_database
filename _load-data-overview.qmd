@@ -7,6 +7,7 @@ co2rr <- readr::read_csv("resources/data/co2rr.csv", show_col_types = FALSE) |>
   dplyr::mutate(
     FE = readr::parse_number(as.character(FE)),
     J = readr::parse_number(as.character(J)),
+    Stability = readr::parse_number(as.character(`Stability (h)`)),
     Year = suppressWarnings(as.integer(Year))
   )
 

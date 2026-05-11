@@ -17,7 +17,7 @@ website:
 format:
   datapage-html:
     theme: [resources/scss/theme.scss, resources/scss/layout.scss]
-    mainfont: whitney-book, system-ui, sans-serif
+    mainfont: "Times New Roman, Times, serif"
     callout-icon: false
 
 execute: 

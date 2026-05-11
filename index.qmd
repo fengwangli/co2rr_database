@@ -15,6 +15,7 @@ data = co2rr
     Product: d.Product || "Unknown",
     FE: toNumber(d.FE),
     J: toNumber(d.J),
+    Stability: toNumber(d.Stability),
     Year: toNumber(d.Year)
   }))
   .filter(d => Number.isFinite(d.FE) || Number.isFinite(d.J) || d.Product !== "Unknown")
@@ -26,9 +27,11 @@ default_color = scheme[0]
 
 :::: {.column-screen-inset}
 
-# CO2RR Experimental Data Demo
+# CO2RR Experimental Database
 
-This demo reads CO2RR experiment records from `resources/data/co2rr.csv` and summarizes product distribution, Faradaic efficiency, and current density.
+CO$_2$ reduction reaction (CO$_2$RR) is an important electrochemical route for converting carbon dioxide into value-added chemicals and fuels using renewable electricity. It offers a promising strategy to mitigate carbon emissions while storing intermittent renewable energy in chemical bonds. Since early studies on electrochemical CO$_2$ conversion, the field has progressed from fundamental investigations of reaction pathways and catalyst selectivity to the development of high-performance catalysts, gas-diffusion electrodes, and flow-cell systems capable of industrially relevant operation.
+
+This website summarizes the development of representative CO$_2$RR studies by tracking two key performance metrics: current density and Faradaic efficiency. These metrics reflect, respectively, the reaction rate and product selectivity, and together provide a concise overview of how CO$_2$RR performance has advanced over time.
 
 ```{ojs display-vals}
 displayScheme = [
@@ -39,10 +42,10 @@ displayScheme = [
 ]
 
 displayConfig = ([
-  { index: 0, value: data.length, label: "Samples", icon: "database" },
-  { index: 1, value: new Set(data.map(d => d.Product)).size, label: "Products", icon: "diagram-3" },
-  { index: 2, value: d3.min(data, d => d.Year), label: "First Year", icon: "calendar3" },
-  { index: 3, value: d3.max(data, d => d.Year), label: "Latest Year", icon: "calendar-check" },
+  { index: 0, value: new Set(data.map(d => d.Product)).size, label: "Products", icon: "diagram-3" },
+  { index: 1, value: d3.min(data, d => d.Year), label: "First Year", icon: "calendar3" },
+  { index: 2, value: d3.max(data, d => d.Year), label: "Latest Year", icon: "calendar-check" },
+  { index: 3, value: `${d3.max(data, d => d.Stability)} h`, label: "Max Duration", icon: "hourglass-split" },
 ])
 
 displayBox = ({ index, value, label, icon }) => {
@@ -72,11 +75,13 @@ html`<div class="display-box-container">${boxes}</div>`
 :::: {layout="[ [1,1] ]"}
 ::: {.plot-container}
 
+### Sample Count by Product
+
 ```{ojs product-counts}
 marginLeft = 110
 
 Plot.plot({
-  style: { fontFamily: "var(--sans-serif)", fontSize: 12 },
+  style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
   width: 0.5 * width,
   height: 360,
   marginLeft,
@@ -114,9 +119,11 @@ Plot.plot({
 
 ::: {.plot-container}
 
+### Faradaic Efficiency vs Current Density
+
 ```{ojs fe-j-scatter}
 Plot.plot({
-  style: { fontFamily: "var(--sans-serif)", fontSize: 12 },
+  style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
   width: 0.5 * width,
   height: 360,
   marginTop: 20,
