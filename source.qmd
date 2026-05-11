@@ -94,63 +94,65 @@ fullTooltip = d => [
 ```
 
 ```{ojs source-plot}
-copyReference = async text => {
-  if (!text) return
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text)
-    return
+sourcePlot = {
+  const copyReference = async text => {
+    if (!text) return
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return
+    }
+    const textarea = document.createElement("textarea")
+    textarea.value = text
+    textarea.style.position = "fixed"
+    textarea.style.opacity = "0"
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand("copy")
+    textarea.remove()
   }
-  const textarea = document.createElement("textarea")
-  textarea.value = text
-  textarea.style.position = "fixed"
-  textarea.style.opacity = "0"
-  document.body.appendChild(textarea)
-  textarea.select()
-  document.execCommand("copy")
-  textarea.remove()
+
+  const plot = Plot.plot({
+    style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
+    width,
+    height: 520,
+    marginLeft: 70,
+    marginRight: 30,
+    marginTop: 20,
+    marginBottom: 45,
+    x: { label: "Year", domain: yearDomain, ticks: yearTicks, grid: true, line: true, tickFormat: d3.format(".0f") },
+    y: { label: yLabels[yVar], grid: true, line: true },
+    color: {
+      label: colorLabels[colorVar],
+      domain: colorDomain,
+      range: ["blue", "green"],
+      legend: true,
+      className: "color-legend"
+    },
+    marks: [
+      Plot.dot(sourceData, {
+        x: "Year",
+        y: yVar,
+        fill: "ColorValue",
+        stroke: "white",
+        strokeWidth: 0.7,
+        r: 10,
+        fillOpacity: 0.85
+      }),
+      Plot.tip(sourceData, Plot.pointer({
+        x: "Year",
+        y: yVar,
+        title: fullTooltip
+      }))
+    ]
+  })
+
+  d3.select(plot)
+    .selectAll("circle")
+    .style("cursor", d => d?.Reference ? "copy" : null)
+    .on("click", (event, d) => copyReference(d?.Reference))
+
+  return plot
 }
-
-sourcePlot = Plot.plot({
-  style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
-  width,
-  height: 520,
-  marginLeft: 70,
-  marginRight: 30,
-  marginTop: 20,
-  marginBottom: 45,
-  x: { label: "Year", domain: yearDomain, ticks: yearTicks, grid: true, line: true, tickFormat: d3.format(".0f") },
-  y: { label: yLabels[yVar], grid: true, line: true },
-  color: {
-    label: colorLabels[colorVar],
-    domain: colorDomain,
-    range: ["blue", "green"],
-    legend: true,
-    className: "color-legend"
-  },
-  marks: [
-    Plot.dot(sourceData, {
-      x: "Year",
-      y: yVar,
-      fill: "ColorValue",
-      stroke: "white",
-      strokeWidth: 0.7,
-      r: 10,
-      fillOpacity: 0.85
-    }),
-    Plot.tip(sourceData, Plot.pointer({
-      x: "Year",
-      y: yVar,
-      title: fullTooltip
-    }))
-  ]
-})
-
-d3.select(sourcePlot)
-  .selectAll("circle")
-  .style("cursor", d => d?.Reference ? "copy" : null)
-  .on("click", (event, d) => copyReference(d?.Reference))
-
-sourcePlot
 ```
 
 :::
