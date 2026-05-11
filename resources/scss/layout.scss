@@ -73,6 +73,7 @@ form > label, .label:has(+ .form) {
 
 .plot-inputs form:has(input[type="range"]) {
   min-width: 15rem;
+  max-width: 15rem;
 }
 
 .plot-inputs input[type="number"] {

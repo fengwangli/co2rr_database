@@ -1,0 +1,135 @@
+{{< include _load-data-overview.qmd >}}
+{{< include components/_style.qmd >}}
+{{< include components/_tol.qmd >}}
+
+```{ojs prelims}
+//| output: false
+
+Plot = import("https://esm.sh/@observablehq/plot@0.6.17")
+
+co2rr = transpose(co2rr_)
+toNumber = v => v == null || v === "" ? NaN : Number(v)
+data = co2rr.map(d => ({
+  ...d,
+  Product: d.Product || "Unknown",
+  FE: toNumber(d.FE),
+  J: toNumber(d.J),
+  Year: toNumber(d.Year),
+  Stability: toNumber(d.Stability),
+  Efull: toNumber(d.Efull),
+  Ecathode: toNumber(d.Ecathode),
+  REType: d["RE type"] || "NA"
+}))
+
+products = Array.from(new Set(data.map(d => d.Product))).sort(d3.ascending)
+scheme = tol.QualMuted
+yLabels = ({
+  FE: "Faradaic efficiency, FE (%)",
+  J: "Current density, J (mA cm-2)"
+})
+colorLabels = ({
+  FE: "Faradaic efficiency, FE (%)",
+  J: "Current density, J (mA cm-2)",
+  Stability: "Stability, ln(h)"
+})
+```
+
+:::: {.column-screen-inset}
+
+# Source Data
+
+This page traces representative CO2RR measurements by publication year.
+
+::: {.plot-container}
+
+::: {.plot-inputs}
+
+```{ojs product-option}
+viewof selectedProduct = Inputs.select(products, { label: "Product", value: products[0] })
+```
+
+```{ojs y-option}
+viewof yVar = Inputs.select(new Map([["Faradaic efficiency, FE (%)", "FE"], ["Current density, J (mA cm-2)", "J"]]), { label: "Y axis", value: "FE" })
+```
+
+```{ojs color-option}
+viewof colorVar = Inputs.select(new Map([["Current density, J", "J"], ["Faradaic efficiency, FE", "FE"], ["Stability", "Stability"]]), { label: "Color", value: "J" })
+```
+
+:::
+
+```{ojs source-data}
+//| output: false
+
+sourceData = data.filter(d =>
+  d.Product === selectedProduct &&
+  Number.isFinite(d.Year) &&
+  Number.isFinite(d[yVar]) &&
+  Number.isFinite(d[colorVar])
+).map(d => ({
+  ...d,
+  ColorValue: colorVar === "Stability" ? Math.log(d.Stability) : d[colorVar]
+}))
+
+yearDomain = d3.extent(data.filter(d => Number.isFinite(d.Year)), d => d.Year)
+yearTicks = d3.range(yearDomain[0], yearDomain[1] + 1, 1)
+colorDomain = d3.extent(sourceData, d => d.ColorValue)
+
+formatMaybe = (label, value, suffix = "") => {
+  if (value == null || value === "" || (typeof value === "number" && !Number.isFinite(value))) return null
+  return `${label}: ${value}${suffix}`
+}
+
+fullTooltip = d => [
+  formatMaybe("Product", d.Product),
+  formatMaybe("Year", d.Year),
+  formatMaybe("FE", d.FE, "%"),
+  formatMaybe("J", d.J, " mA cm-2"),
+  formatMaybe("Efull", d.Efull, " V"),
+  formatMaybe("Ecathode", d.Ecathode, " V"),
+  d.REType !== "NA" ? `RE type: ${d.REType}` : null,
+  formatMaybe("Stability", d.Stability, " h"),
+  d.Reference ? `Reference: ${d.Reference}` : null
+].filter(Boolean).join("\n")
+```
+
+```{ojs source-plot}
+Plot.plot({
+  style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
+  width,
+  height: 520,
+  marginLeft: 70,
+  marginRight: 30,
+  marginTop: 20,
+  marginBottom: 45,
+  x: { label: "Year", domain: yearDomain, ticks: yearTicks, grid: true, line: true, tickFormat: d3.format(".0f") },
+  y: { label: yLabels[yVar], grid: true, line: true },
+  color: {
+    label: colorLabels[colorVar],
+    domain: colorDomain,
+    range: ["blue", "green"],
+    legend: true,
+    className: "color-legend"
+  },
+  marks: [
+    Plot.dot(sourceData, {
+      x: "Year",
+      y: yVar,
+      fill: "ColorValue",
+      stroke: "white",
+      strokeWidth: 0.7,
+      r: 10,
+      fillOpacity: 0.85
+    }),
+    Plot.tip(sourceData, Plot.pointer({
+      x: "Year",
+      y: yVar,
+      title: fullTooltip
+    }))
+  ]
+})
+```
+
+:::
+
+::::

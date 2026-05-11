@@ -56,6 +56,9 @@ rsconnect/
 .DS_Store
 _site/
 site_libs/
+index.html
+potential.html
+source.html
 *_files/
 *_cache/
 

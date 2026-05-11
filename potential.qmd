@@ -53,7 +53,7 @@ radiusScale = (value, extent) => {
 
 :::::: {.column-screen-inset}
 
-# Potential dependence
+# Potential Dependence
 
 This page shows the dependence of current density and Faradaic efficiency on potential. Different studies may report the potential using $E_\mathrm{hull}$ or $E_\mathrm{cathode}$, with reference electrodes including SCE, RHE, and Ag/AgCl.
 
