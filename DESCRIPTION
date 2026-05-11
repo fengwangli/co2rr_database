@@ -1,0 +1,10 @@
+Package: co2rrdatabase
+Type: Project
+Title: CO2RR Database Demo
+Version: 0.0.0.9000
+Encoding: UTF-8
+Imports:
+    dplyr,
+    knitr,
+    readr,
+    rmarkdown

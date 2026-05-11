@@ -39,6 +39,9 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+# renv is not used for this lightweight demo
+renv/
+
 # pkgdown site
 docs/
 
