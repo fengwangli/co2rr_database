@@ -6,52 +6,46 @@
 //| output: false
 
 Plot = import("https://esm.sh/@observablehq/plot@0.6.17")
-import {yamultiselect} from '@saneef/yet-another-multi-select'
 
-overview = transpose(overview_)
+co2rr = transpose(co2rr_)
+toNumber = v => v == null || v === "" ? NaN : Number(v)
+data = co2rr
+  .map(d => ({
+    ...d,
+    Product: d.Product || "Unknown",
+    FE: toNumber(d.FE),
+    J: toNumber(d.J),
+    Year: toNumber(d.Year)
+  }))
+  .filter(d => Number.isFinite(d.FE) || Number.isFinite(d.J) || d.Product !== "Unknown")
 
-task_info = ({
-    "hf": "Hearts & Flowers",
-   "sds": "Same & Different",
-    "mg": "Memory",
-  "math": "Math",
-"matrix": "Pattern Matching",
-  "mrot": "Shape Rotation",
-  "trog": "Sentence Understanding",
- "vocab": "Vocabulary",
-   "tom": "Stories",
-    "pa": "Language Sounds",
-   "sre": "Sentence Reading",
-   "swr": "Word Reading",
-})
-
-mutable dn = [{ name: "levante-data-pilots", ref: "48qk" }] // default datasource
-ov = overview.map(obj => ({...obj, task_label: task_info[obj.task_code]})).filter(d => ds.includes(d.ref))
+plotData = data.filter(d => Number.isFinite(d.FE) && Number.isFinite(d.J))
+scheme = tol.QualMuted
+default_color = scheme[0]
 ```
 
 :::: {.column-screen-inset}
 
-```{ojs diplay-vals}
+# CO2RR Experimental Data Demo
+
+This demo reads CO2RR experiment records from `resources/data/co2rr.csv` and summarizes product distribution, Faradaic efficiency, and current density.
+
+```{ojs display-vals}
 displayScheme = [
   [204, 102, 119],
   [221, 204, 119],
-  [153, 153,  51],
   [ 68, 170, 153],
   [136, 204, 238],
-  [170,  68, 153],
 ]
 
 displayConfig = ([
-  { index: 0, property: "site",         label: "Sites",        icon: "globe"          },
-  { index: 1, property: "dataset",      label: "Datasets",     icon: "archive"        },
-  { index: 2, property: "language",     label: "Languages",    icon: "translate"      },
-  { index: 3, property: "task_code",    label: "Tasks",        icon: "ui-checks-grid" },
-  { index: 4, property: "user_id_hash", label: "Participants", icon: "person-arms-up" },
-  { index: 5, property: "run_id_hash",  label: "Assessments",  icon: "clipboard-data" },
+  { index: 0, value: data.length, label: "Samples", icon: "database" },
+  { index: 1, value: new Set(data.map(d => d.Product)).size, label: "Products", icon: "diagram-3" },
+  { index: 2, value: d3.min(data, d => d.Year), label: "First Year", icon: "calendar3" },
+  { index: 3, value: d3.max(data, d => d.Year), label: "Latest Year", icon: "calendar-check" },
 ])
 
-displayBox = ({ index, property, label, icon }) => {
-  const values = new Set(ov.map(d => d[property]))
+displayBox = ({ index, value, label, icon }) => {
   const color = displayScheme[index]
   const color_str = `${color[0]}, ${color[1]}, ${color[2]}`
   const borderColor = `rgb(${color_str})`
@@ -63,7 +57,7 @@ displayBox = ({ index, property, label, icon }) => {
           <span class="display-icon"><i class="bi-${icon}" role="img" aria-hidden="true"></i></span>
           <span class="display-content">
             <span class="display-var">${label}</span>
-            <span class="display-val">${values.size}</span>
+            <span class="display-val">${value ?? "NA"}</span>
           </span>
         </span>
       </div>
@@ -77,61 +71,41 @@ html`<div class="display-box-container">${boxes}</div>`
 
 :::: {layout="[ [1,1] ]"}
 ::: {.plot-container}
-::: {.plot-inputs}
 
-```{ojs}
-x_var_opts = new Map([["Assessments", "run_id_hash"], ["Participants", "user_id_hash"]])
-viewof x_var = Inputs.select(x_var_opts, { label: "Count of" })
-```
+```{ojs product-counts}
+marginLeft = 110
 
-```{ojs}
-y_var_opts = new Map([["Site", "site"], ["Dataset", "dataset"], ["Language", "language"], ["Task", "task_label"]])
-viewof y_var = Inputs.select(y_var_opts, { label: "For each", value: "task_label" })
-```
-
-```{ojs}
-color_opts = new Map([["", null], ["Site", "site"], ["Dataset", "dataset"], ["Language", "language"], ["Task", "task_label"]])
-viewof color_var = Inputs.select(color_opts, { label: "Grouped by", value: "language" })
-```
-
-:::
-
-```{ojs}
-scheme = tol.QualMuted // color scheme
-default_color = scheme[1] // default color when there's no color variable
-plt_color = color_var || default_color // plot color variable
-
-x_lab = x_var_opts.entries().filter(([k, v]) => v === x_var)
-y_lab = y_var_opts.entries().filter(([k, v]) => v === y_var)
-
-//groups = d3.groupSort(ov, g => -new Set(g.map(d => d[x_var])).size, d => d[color_var])
-
-marginLeft = 160
 Plot.plot({
   style: { fontFamily: "var(--sans-serif)", fontSize: 12 },
   width: 0.5 * width,
-  marginLeft: marginLeft,
-  marginTop: 10,
+  height: 360,
+  marginLeft,
+  marginTop: 20,
   marginBottom: 40,
-      //x: { grid: true },
-  x: { label: `${x_lab[0]} count`, axis: "bottom", line: true },
-  y: { label: y_lab[0], labelAnchor: "top", tickSize: 0, tickPadding: 2 },
-  color: {
-    //domain: groups,
-    range: scheme,
-    legend: color_var !== null,
-    marginLeft: marginLeft,
-    className: "color-legend"
-  },
+  x: { label: "Sample count", axis: "bottom", grid: true, line: true },
+  y: { label: null, tickSize: 0, tickPadding: 4 },
+  color: { range: scheme },
   marks: [
-    Plot.barX(ov, Plot.groupY(
-      { x: g => new Set(g.map(d => d[x_var])).size },
-      { y: y_var, fill: plt_color, sort: { y: "x", reverse: true, }, inset: 1 }
+    Plot.barX(data, Plot.groupY(
+      { x: "count" },
+      {
+        y: "Product",
+        fill: "Product",
+        sort: { y: "x", reverse: true },
+        inset: 1
+      }
     )),
-    Plot.textX(ov, Plot.stackX(Plot.groupY(
-      { x: g => new Set(g.map(d => d[x_var])).size, text: g => new Set(g.map(d => d[x_var])).size },
-      { y: y_var, z: plt_color, fill: "white" }
-    ))),
+    Plot.textX(data, Plot.groupY(
+      { x: "count", text: "count" },
+      {
+        y: "Product",
+        dx: 4,
+        textAnchor: "start",
+        fill: "currentColor",
+        sort: { y: "x", reverse: true }
+      }
+    )),
+    Plot.ruleX([0])
   ]
 })
 ```
@@ -140,56 +114,42 @@ Plot.plot({
 
 ::: {.plot-container}
 
-::: {.plot-inputs}
-
-```{ojs}
-hist_var_opts = new Map([["Age (years)", "age"]])
-viewof hist_var = Inputs.select(hist_var_opts, { label: "Count of" })
-
-//hist_bin_opts = new Map([["Age (years)", "age"]])
-//hist_bin_opts = d3.range(1, 24, 1) // months
-//viewof hist_bin = Inputs.select(hist_bin_opts, { label: "Binned to" })
-```
-
-```{ojs}
-stack_var_opts = new Map([["", null], ["Site", "site"], ["Dataset", "dataset"], ["Language", "language"], ["Task", "task_label"]])
-viewof stack_var = Inputs.select(stack_var_opts, { label: "Grouped by", value: "language" })
-```
-
-:::
-
-```{ojs}
-hist_x_lab = hist_var_opts.entries().filter(([k, v]) => v === hist_var)
-
+```{ojs fe-j-scatter}
 Plot.plot({
   style: { fontFamily: "var(--sans-serif)", fontSize: 12 },
-  //width: 1000,
   width: 0.5 * width,
-  height: 300,
-  marginTop: 10,
-  marginBottom: 40,
-  x: {
-    //domain: [3,12],
-    label: hist_x_lab[0],
-    line: true
-  },
+  height: 360,
+  marginTop: 20,
+  marginBottom: 45,
+  marginLeft: 60,
+  x: { label: "Faradaic efficiency, FE (%)", grid: true, line: true },
+  y: { label: "Current density, J (mA cm-2)", grid: true, line: true },
   color: {
     legend: true,
-    label: "bem",
-    //domain: groups,
+    label: "Product",
     range: scheme,
-    //legend: stack_var !== null,
-    //marginLeft: marginLeft,
     className: "color-legend"
   },
   marks: [
-    Plot.rectY(ov, Plot.binX({y: "count"}, {
-      fill: stack_var || default_color,
-      x: {
-        //interval: hist_bin / 12,
-        value: hist_var
-      }
-    })),
+    Plot.dot(plotData, {
+      x: "FE",
+      y: "J",
+      fill: "Product",
+      stroke: "white",
+      strokeWidth: 0.6,
+      r: 4,
+      fillOpacity: 0.85
+    }),
+    Plot.tip(plotData, Plot.pointer({
+      x: "FE",
+      y: "J",
+      title: d => [
+        `Product: ${d.Product}`,
+        `FE: ${d.FE}%`,
+        `J: ${d.J} mA cm-2`,
+        Number.isFinite(d.Year) ? `Year: ${d.Year}` : null
+      ].filter(Boolean).join("\n")
+    }))
   ]
 })
 ```
@@ -197,61 +157,4 @@ Plot.plot({
 :::
 ::::
 
-:::: {layout="[ [1,1] ]"}
-::: {.panel-input}
-
-{{< bi shuffle >}} _Change data source..._
-
-::: {.side-inputs}
-
-::: {.info-text}
-_Note: To change data sources, you need a [Redivis](https://redivis.com) account. Click on the button below to log into your Redivis account and list the data sources that you have access to._
-:::
-
-::: {.filters-container}
-
-```{ojs populate-datasource}
-// populates datasource selector -- first click should open redivis auth pop up
-viewof auth_button = Inputs.button("Populate data sources", {
-  reduce: async () => {
-    const ds = await getDatasets()
-    mutable dn = allowedDatasetNames(ds)
-  }
-})
-```
-
-```{ojs select-datasource}
-dnf = dn.filter(d => overview.map(v => v.ref).includes(d.ref))
-viewof ds = yamultiselect(new Map(dnf.map(d => [d.name, d.ref])), { value: dnf.map(d => d.ref), placeholder: "Select...", width: "100%" })
-```
-
-:::
-:::
-:::
 ::::
-
-::::
-
-```{ojs redivis}
-//| output: false
-
-// load redivis
-redivis = require("redivis")
-
-// get references to all LEVANTE datasets (with "properties" populated)
-async function getDatasets() {
-  const ds = await redivis
-    .organization('LEVANTE')
-    .listDatasets()
-  return await Promise.all(ds.map(d => d.get()))
-}
-
-// filter datasets by authed user's access, extract their reference IDs
-allowedDatasetNames = (ds) => {
-  const accessLevels = ["data", "edit"]
-  return ds.filter(d => accessLevels.includes(d.properties.accessLevel))
-    .map(d => ({ name: d.properties.name, ref: d.properties.referenceId }))
-    .sort((a, b) => d3.ascending(a.name, b.name))
-    .filter(d => d.name !== "levante-data-pilots-raw") // TODO: fix name inconsistencies
-}
-```

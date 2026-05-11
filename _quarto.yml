@@ -1,6 +1,8 @@
 project:
-  title: "LEVANTE"
+  title: "CO2RR Database Demo"
   type: website
+  render:
+    - index.qmd
 
 website:
   navbar:
@@ -11,12 +13,6 @@ website:
       - text: Overview
         href: index.qmd
         icon: bar-chart
-      - href: scores.qmd
-        text: Scores
-        icon: graph-up
-      - href: items.qmd
-        text: Items
-        icon: sliders
 
 format:
   datapage-html:
@@ -29,13 +25,6 @@ execute:
   message: false
   warning: false
   error: false
-
-# mode: local
-# mode: cache
-redivis:
-  user: levante
-  dataset: levante-data-pilots-processed
-  table: scores
 
 resources:
   - "resources/fonts/*"
