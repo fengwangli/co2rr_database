@@ -5,6 +5,7 @@ project:
     - index.qmd
     - potential.qmd
     - source.qmd
+    - about.qmd
 
 website:
   navbar:
@@ -21,6 +22,9 @@ website:
       - text: Source
         href: source.qmd
         icon: journal-text
+      - text: About
+        href: about.qmd
+        icon: info-circle
 
 format:
   datapage-html:
