@@ -1,0 +1,41 @@
+project:
+  title: "LEVANTE"
+  type: website
+
+website:
+  navbar:
+    title: false
+    search: false
+    background: "none"
+    left:
+      - text: Overview
+        href: index.qmd
+        icon: bar-chart
+      - href: scores.qmd
+        text: Scores
+        icon: graph-up
+      - href: items.qmd
+        text: Items
+        icon: sliders
+
+format:
+  datapage-html:
+    theme: [resources/scss/theme.scss, resources/scss/layout.scss]
+    mainfont: whitney-book, system-ui, sans-serif
+    callout-icon: false
+
+execute: 
+  echo: false
+  message: false
+  warning: false
+  error: false
+
+# mode: local
+# mode: cache
+redivis:
+  user: levante
+  dataset: levante-data-pilots-processed
+  table: scores
+
+resources:
+  - "resources/fonts/*"
