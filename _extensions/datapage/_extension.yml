@@ -6,15 +6,6 @@ contributes:
   project:
     project:
       type: website
-    website:
-      navbar:
-        left:
-          - href: data.qmd
-            text: Data
-          - href: analysis.qmd
-            text: Analysis
-          - href: about.qmd
-            text: About
     format: datapage-html
   formats:
     html:
@@ -27,5 +18,3 @@ contributes:
         sidebar-width: 0px
         body-width: 1200px
         margin-width: 0px
-      shortcodes:
-        - redivis.lua
