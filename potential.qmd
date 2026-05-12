@@ -137,13 +137,19 @@ yLabels = ({
   FE: "Faradaic efficiency, FE (%)",
   J: "Current density, J (mA cm-2)"
 })
+
+potentialTitle = type => {
+  if (type === "Efull") return html`<span><i>E</i><sub>full</sub></span>`
+  const suffix = type.replace("Ecathode", "")
+  return html`<span><i>E</i><sub>cathode</sub>${suffix}</span>`
+}
 ```
 
 ```{ojs potential-plots}
 plotForPotential = type => {
   const plotRows = filteredPotentialRows.filter(d => d.PotentialType === type)
   return html`<div class="potential-plot-panel">
-    <h3>${type}</h3>
+    <h3>${potentialTitle(type)}</h3>
     ${Plot.plot({
       style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
       width: 460,

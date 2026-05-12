@@ -26,6 +26,11 @@ default_color = scheme[0]
 yearExtent = d3.extent(data.filter(d => Number.isFinite(d.Year)), d => d.Year)
 durationExtent = d3.extent(data.filter(d => Number.isFinite(d.Stability)), d => d.Stability)
 logDurationExtent = durationExtent.map(Math.log)
+radiusScale = (value, extent) => {
+  if (!Number.isFinite(value) || extent[0] === extent[1]) return 5
+  return 4 + 8 * ((value - extent[0]) / (extent[1] - extent[0]))
+}
+overviewPlotWidth = width < 700 ? width : 0.5 * width
 ```
 
 :::: {.column-screen-inset}
@@ -75,7 +80,7 @@ boxes = displayConfig.map(displayBox)
 html`<div class="display-box-container">${boxes}</div>`
 ```
 
-:::: {layout="[ [1,1] ]"}
+:::: {.overview-plot-layout layout="[ [1,1] ]"}
 ::: {.plot-container}
 
 ### Sample Count by Product
@@ -105,7 +110,7 @@ filteredCountData = data.filter(d =>
 
 Plot.plot({
   style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
-  width: 0.5 * width,
+  width: overviewPlotWidth,
   height: 360,
   marginLeft,
   marginTop: 20,
@@ -151,6 +156,10 @@ productOptions = new Map([["All products", "All"], ...Array.from(new Set(data.ma
 viewof selectedProduct = Inputs.select(productOptions, { label: "Product" })
 ```
 
+```{ojs size-option}
+viewof sizeVar = Inputs.select(new Map([["Year", "Year"], ["Duration", "Stability"]]), { label: "Size", value: "Year" })
+```
+
 ```{ojs year-filter}
 viewof startYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
 ```
@@ -172,15 +181,17 @@ filteredPlotData = plotData.filter(d =>
   d.Stability >= Math.exp(minLogDuration)
 )
 
-yearDomain = d3.extent(plotData.filter(d => Number.isFinite(d.Year)), d => d.Year)
-radiusForYear = d => {
-  if (!Number.isFinite(d.Year) || yearDomain[0] === yearDomain[1]) return 5
-  return 5 + 5 * ((d.Year - yearDomain[0]) / (yearDomain[1] - yearDomain[0]))
-}
+sizeExtent = sizeVar === "Stability"
+  ? d3.extent(plotData.filter(d => Number.isFinite(d.Stability) && d.Stability > 0), d => Math.log(d.Stability))
+  : d3.extent(plotData.filter(d => Number.isFinite(d.Year)), d => d.Year)
+
+pointRadius = d => sizeVar === "Stability"
+  ? radiusScale(Math.log(d.Stability), sizeExtent)
+  : radiusScale(d.Year, sizeExtent)
 
 Plot.plot({
   style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
-  width: 0.5 * width,
+  width: overviewPlotWidth,
   height: 360,
   marginTop: 20,
   marginBottom: 45,
@@ -201,7 +212,7 @@ Plot.plot({
       fill: "Product",
       stroke: "white",
       strokeWidth: 0.6,
-      r: radiusForYear,
+      r: pointRadius,
       fillOpacity: 0.85
     }),
     Plot.tip(filteredPlotData, Plot.pointer({

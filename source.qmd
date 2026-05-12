@@ -40,7 +40,7 @@ colorLabels = ({
 
 This page traces representative CO2RR measurements by publication year.
 
-::: {.plot-container}
+::: {.plot-container .source-plot-container}
 
 ::: {.plot-inputs}
 
@@ -95,6 +95,37 @@ fullTooltip = d => [
 
 ```{ojs source-plot}
 sourcePlot = {
+  const legendDomain = colorDomain[0] === colorDomain[1]
+    ? [colorDomain[0] - 1, colorDomain[1] + 1]
+    : colorDomain
+  const legendWidth = 450
+  const legendHeight = 24
+  const legendTicks = d3.ticks(legendDomain[0], legendDomain[1], 5)
+  const legendFormat = d3.format(",")
+  const gradientId = `source-color-ramp-${colorVar}`
+  const colorRamp = d3.scaleLinear()
+    .domain(legendDomain)
+    .range(["blue", "green"])
+
+  const sourceLegend = html`<div class="source-color-legend">
+    <div class="source-color-legend-label">${colorLabels[colorVar]}</div>
+    <svg width="${legendWidth}" height="64" viewBox="0 0 ${legendWidth} 64" role="img" aria-label="${colorLabels[colorVar]} color legend">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0%" x2="100%" y1="0%" y2="0%">
+          ${d3.range(0, 1.01, 0.1).map(t => svg`<stop offset="${t * 100}%" stop-color="${colorRamp(legendDomain[0] + t * (legendDomain[1] - legendDomain[0]))}"></stop>`)}
+        </linearGradient>
+      </defs>
+      <rect x="0" y="8" width="${legendWidth}" height="${legendHeight}" fill="url(#${gradientId})"></rect>
+      ${legendTicks.map(t => {
+        const x = legendWidth * ((t - legendDomain[0]) / (legendDomain[1] - legendDomain[0]))
+        return svg`<g transform="translate(${x}, 32)">
+          <line y2="10"></line>
+          <text y="28">${legendFormat(t)}</text>
+        </g>`
+      })}
+    </svg>
+  </div>`
+
   const copyReference = async text => {
     if (!text) return
     if (navigator.clipboard?.writeText) {
@@ -125,7 +156,7 @@ sourcePlot = {
       label: colorLabels[colorVar],
       domain: colorDomain,
       range: ["blue", "green"],
-      legend: true,
+      legend: false,
       className: "color-legend"
     },
     marks: [
@@ -151,7 +182,7 @@ sourcePlot = {
     .style("cursor", d => d?.Reference ? "copy" : null)
     .on("click", (event, d) => copyReference(d?.Reference))
 
-  return plot
+  return html`<div class="source-plot-output">${sourceLegend}${plot}</div>`
 }
 ```
 
