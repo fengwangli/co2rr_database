@@ -1,5 +1,5 @@
 project:
-  title: "CO2RR Database Demo"
+  title: "CO2RR Database"
   type: website
   render:
     - index.qmd

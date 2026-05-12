@@ -1,9 +1,6 @@
-# CO2RR Database Demo
+# CO2RR Database
 
-This repository contains a Quarto data page demo for CO2 reduction reaction
-(CO2RR) experiment data. The site reads the local CSV file at
-`resources/data/co2rr.csv` during rendering and generates interactive overview,
-potential, and source visualizations.
+This repository contains a Quarto data page for CO2 reduction reaction (CO2RR) experiment data. 
 
 ## Pages
 
@@ -40,3 +37,11 @@ python -m http.server 8000 -d _site
 
 R dependencies are tracked in `DESCRIPTION`. The project does not require an
 external data API token or `renv.lock`.
+
+## Reference
+
+```powershell
+https://github.com/levante-framework/levante-datapage
+
+https://github.com/datapages/datapage
+```
