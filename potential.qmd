@@ -57,6 +57,20 @@ yearRangeInput = () => interval(yearExtent, {
   width: "100%",
   color: "#3b99fc"
 })
+
+axisOptions = new Map([
+  ["Potential (V)", "Potential"],
+  ["Faradaic efficiency, FE (%)", "FE"],
+  ["Current density, J (mA cm-2)", "J"],
+  ["Stability, ln(h)", "Stability"]
+])
+
+sizeOptions = new Map([
+  ["Year", "Year"],
+  ["Duration", "Stability"],
+  ["Faradaic efficiency, FE", "FE"],
+  ["Current density, J", "J"]
+])
 ```
 
 :::::: {.column-screen-inset}
@@ -102,7 +116,15 @@ viewof selectedPotentialTypes = Inputs.checkbox(potentialTypes, { value: potenti
 ## {{< bi circle class=header-icon >}}Size
 
 ```{ojs size-option}
-viewof sizeVar = Inputs.select(new Map([["Year", "Year"], ["Duration", "Stability"]]), { label: "Size", value: "Year" })
+viewof sizeVar = Inputs.select(sizeOptions, { label: "Size", value: "Year" })
+```
+:::
+
+::: {.callout-note collapse="false"}
+## {{< bi graph-up-arrow class=header-icon >}}X Axis
+
+```{ojs x-option}
+viewof xVar = Inputs.select(axisOptions, { label: "X axis", value: "Potential" })
 ```
 :::
 
@@ -110,7 +132,7 @@ viewof sizeVar = Inputs.select(new Map([["Year", "Year"], ["Duration", "Stabilit
 ## {{< bi graph-up class=header-icon >}}Y Axis
 
 ```{ojs y-option}
-viewof yVar = Inputs.select(new Map([["Faradaic efficiency, FE (%)", "FE"], ["Current density, J (mA cm-2)", "J"]]), { label: "Y axis", value: "FE" })
+viewof yVar = Inputs.select(axisOptions, { label: "Y axis", value: "FE" })
 ```
 :::
 
@@ -124,27 +146,46 @@ viewof yVar = Inputs.select(new Map([["Faradaic efficiency, FE (%)", "FE"], ["Cu
 ```{ojs potential-filtered}
 //| output: false
 
-filteredPotentialRows = potentialRows.filter(d =>
+usesPotentialAxis = xVar === "Potential" || yVar === "Potential"
+
+valueForAxis = (d, v) => v === "Stability" ? Math.log(d.Stability) : d[v]
+
+hasFiniteAxisValue = (d, v) => Number.isFinite(valueForAxis(d, v))
+
+baseFilter = d =>
   selectedProducts.includes(d.Product) &&
-  selectedPotentialTypes.includes(d.PotentialType) &&
   d.Year >= selectedYearRange[0] &&
   d.Year <= selectedYearRange[1] &&
-  d.Stability >= Math.exp(minLogDuration) &&
-  Number.isFinite(d.Potential) &&
-  Number.isFinite(d[yVar])
+  d.Stability >= Math.exp(minLogDuration)
+
+filteredPotentialRows = potentialRows.filter(d =>
+  baseFilter(d) &&
+  selectedPotentialTypes.includes(d.PotentialType) &&
+  hasFiniteAxisValue(d, xVar) &&
+  hasFiniteAxisValue(d, yVar)
 )
 
+filteredSingleRows = data.filter(d =>
+  baseFilter(d) &&
+  hasFiniteAxisValue(d, xVar) &&
+  hasFiniteAxisValue(d, yVar)
+)
+
+plotRows = usesPotentialAxis ? filteredPotentialRows : filteredSingleRows
+
 sizeExtent = sizeVar === "Stability"
-  ? d3.extent(potentialRows.filter(d => Number.isFinite(d.Stability)), d => Math.log(d.Stability))
-  : d3.extent(potentialRows.filter(d => Number.isFinite(d.Year)), d => d.Year)
+  ? d3.extent(data.filter(d => Number.isFinite(d.Stability) && d.Stability > 0), d => Math.log(d.Stability))
+  : d3.extent(data.filter(d => Number.isFinite(d[sizeVar])), d => d[sizeVar])
 
 pointRadius = d => sizeVar === "Stability"
   ? radiusScale(Math.log(d.Stability), sizeExtent)
-  : radiusScale(d.Year, sizeExtent)
+  : radiusScale(d[sizeVar], sizeExtent)
 
-yLabels = ({
+axisLabels = ({
+  Potential: "Potential (V)",
   FE: "Faradaic efficiency, FE (%)",
-  J: "Current density, J (mA cm-2)"
+  J: "Current density, J (mA cm-2)",
+  Stability: "Stability, ln(h)"
 })
 
 potentialTitle = type => {
@@ -152,62 +193,79 @@ potentialTitle = type => {
   const suffix = type.replace("Ecathode", "")
   return html`<span><i>E</i><sub>cathode</sub>${suffix}</span>`
 }
+
+formatTooltipValue = (d, v) => {
+  const value = valueForAxis(d, v)
+  if (!Number.isFinite(value)) return null
+  if (v === "Potential") return `Potential: ${value.toFixed(3)} V`
+  if (v === "FE") return `FE: ${d.FE}%`
+  if (v === "J") return `J: ${d.J} mA cm-2`
+  if (v === "Stability") return `Stability: ${d.Stability} h`
+  return null
+}
+
+tooltipFor = d => [
+  `Product: ${d.Product}`,
+  formatTooltipValue(d, xVar),
+  xVar !== yVar ? formatTooltipValue(d, yVar) : null,
+  usesPotentialAxis ? `Potential type: ${d.PotentialType}` : null,
+  xVar !== "FE" && yVar !== "FE" && Number.isFinite(d.FE) ? `FE: ${d.FE}%` : null,
+  xVar !== "J" && yVar !== "J" && Number.isFinite(d.J) ? `J: ${d.J} mA cm-2` : null,
+  Number.isFinite(d.Year) ? `Year: ${d.Year}` : null,
+  xVar !== "Stability" && yVar !== "Stability" && Number.isFinite(d.Stability) ? `Stability: ${d.Stability} h` : null,
+  d.REType !== "NA" ? `RE type: ${d.REType}` : null,
+  d.Reference ? `Reference: ${d.Reference}` : null
+].filter(Boolean).join("\n")
 ```
 
 ```{ojs potential-plots}
+plotForRows = (rows, { title = null, width = 460, height = 320 } = {}) => html`<div class="potential-plot-panel">
+  ${title == null ? null : html`<h3>${title}</h3>`}
+  ${Plot.plot({
+    style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
+    width,
+    height,
+    marginLeft: 60,
+    marginRight: 20,
+    marginTop: 15,
+    marginBottom: 45,
+    x: { label: axisLabels[xVar], grid: true, line: true },
+    y: { label: axisLabels[yVar], grid: true, line: true },
+    r: { type: "identity" },
+    color: {
+      label: "Product",
+      range: scheme,
+      legend: true,
+      className: "color-legend"
+    },
+    marks: [
+      Plot.dot(rows, {
+        x: d => valueForAxis(d, xVar),
+        y: d => valueForAxis(d, yVar),
+        fill: "Product",
+        stroke: "white",
+        strokeWidth: 0.6,
+        r: pointRadius,
+        fillOpacity: 0.85
+      }),
+      Plot.tip(rows, Plot.pointer({
+        x: d => valueForAxis(d, xVar),
+        y: d => valueForAxis(d, yVar),
+        title: tooltipFor
+      }))
+    ]
+  })}
+</div>`
+
 plotForPotential = type => {
-  const plotRows = filteredPotentialRows.filter(d => d.PotentialType === type)
-  return html`<div class="potential-plot-panel">
-    <h3>${potentialTitle(type)}</h3>
-    ${Plot.plot({
-      style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
-      width: 460,
-      height: 320,
-      marginLeft: 60,
-      marginRight: 20,
-      marginTop: 15,
-      marginBottom: 45,
-      x: { label: "Potential (V)", grid: true, line: true },
-      y: { label: yLabels[yVar], grid: true, line: true },
-      r: { type: "identity" },
-      color: {
-        label: "Product",
-        range: scheme,
-        legend: true,
-        className: "color-legend"
-      },
-      marks: [
-        Plot.dot(plotRows, {
-          x: "Potential",
-          y: yVar,
-          fill: "Product",
-          stroke: "white",
-          strokeWidth: 0.6,
-          r: pointRadius,
-          fillOpacity: 0.85
-        }),
-        Plot.tip(plotRows, Plot.pointer({
-          x: "Potential",
-          y: yVar,
-          title: d => [
-            `Product: ${d.Product}`,
-            `Potential: ${d.Potential.toFixed(3)} V`,
-            `Potential type: ${d.PotentialType}`,
-            `FE: ${d.FE}%`,
-            `J: ${d.J} mA cm-2`,
-            Number.isFinite(d.Year) ? `Year: ${d.Year}` : null,
-            Number.isFinite(d.Stability) ? `Stability: ${d.Stability} h` : null,
-            d.REType !== "NA" ? `RE type: ${d.REType}` : null,
-            d.Reference ? `Reference: ${d.Reference}` : null
-          ].filter(Boolean).join("\n")
-        }))
-      ]
-    })}
-  </div>`
+  const rows = plotRows.filter(d => d.PotentialType === type)
+  return plotForRows(rows, { title: potentialTitle(type) })
 }
 
 visibleTypes = potentialTypes.filter(t => selectedPotentialTypes.includes(t))
-html`<div class="potential-plot-grid">${visibleTypes.map(plotForPotential)}</div>`
+usesPotentialAxis
+  ? html`<div class="potential-plot-grid">${visibleTypes.map(plotForPotential)}</div>`
+  : html`<div class="potential-single-plot">${plotForRows(plotRows, { width: 640, height: 420 })}</div>`
 ```
 
 ::::
