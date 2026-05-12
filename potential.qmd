@@ -219,8 +219,8 @@ tooltipFor = d => [
 ```
 
 ```{ojs potential-plots}
-plotForRows = (rows, { title = null, width = 460, height = 320 } = {}) => html`<div class="potential-plot-panel">
-  ${title == null ? null : html`<h3>${title}</h3>`}
+plotForRows = (rows, { title = "", width = 460, height = 320 } = {}) => html`<div class="potential-plot-panel">
+  ${title === "" ? "" : html`<h3>${title}</h3>`}
   ${Plot.plot({
     style: { fontFamily: "Times New Roman, Times, serif", fontSize: 12 },
     width,
