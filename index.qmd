@@ -1,5 +1,6 @@
 {{< include _load-data-overview.qmd >}}
 {{< include components/_style.qmd >}}
+{{< include components/_interval.qmd >}}
 {{< include components/_tol.qmd >}}
 
 ```{ojs prelims}
@@ -31,6 +32,13 @@ radiusScale = (value, extent) => {
   return 4 + 8 * ((value - extent[0]) / (extent[1] - extent[0]))
 }
 overviewPlotWidth = width < 700 ? width : 0.5 * width
+yearRangeInput = () => interval(yearExtent, {
+  step: 1,
+  label: "Year",
+  format: ([start, end]) => `${start} - ${end}`,
+  width: "100%",
+  color: "#3b99fc"
+})
 ```
 
 :::: {.column-screen-inset}
@@ -88,7 +96,7 @@ html`<div class="display-box-container">${boxes}</div>`
 ::: {.plot-inputs}
 
 ```{ojs product-count-filter}
-viewof countStartYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+viewof countYearRange = yearRangeInput()
 ```
 
 ::: {.duration-filter-control}
@@ -104,7 +112,8 @@ viewof countMinLogDuration = Inputs.range(logDurationExtent, { label: "Min durat
 ```{ojs product-counts}
 marginLeft = 110
 filteredCountData = data.filter(d =>
-  d.Year >= countStartYear &&
+  d.Year >= countYearRange[0] &&
+  d.Year <= countYearRange[1] &&
   d.Stability >= Math.exp(countMinLogDuration)
 )
 
@@ -161,7 +170,7 @@ viewof sizeVar = Inputs.select(new Map([["Year", "Year"], ["Duration", "Stabilit
 ```
 
 ```{ojs year-filter}
-viewof startYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+viewof selectedYearRange = yearRangeInput()
 ```
 
 ::: {.duration-filter-control}
@@ -177,7 +186,8 @@ viewof minLogDuration = Inputs.range(logDurationExtent, { label: "Min duration (
 ```{ojs fe-j-scatter}
 filteredPlotData = plotData.filter(d =>
   (selectedProduct === "All" || d.Product === selectedProduct) &&
-  d.Year >= startYear &&
+  d.Year >= selectedYearRange[0] &&
+  d.Year <= selectedYearRange[1] &&
   d.Stability >= Math.exp(minLogDuration)
 )
 

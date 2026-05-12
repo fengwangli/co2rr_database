@@ -1,5 +1,6 @@
 {{< include _load-data-overview.qmd >}}
 {{< include components/_style.qmd >}}
+{{< include components/_interval.qmd >}}
 {{< include components/_tol.qmd >}}
 
 ```{ojs prelims}
@@ -49,6 +50,13 @@ radiusScale = (value, extent) => {
   if (!Number.isFinite(value) || extent[0] === extent[1]) return 5
   return 4 + 8 * ((value - extent[0]) / (extent[1] - extent[0]))
 }
+yearRangeInput = () => interval(yearExtent, {
+  step: 1,
+  label: "Year",
+  format: ([start, end]) => `${start} - ${end}`,
+  width: "100%",
+  color: "#3b99fc"
+})
 ```
 
 :::::: {.column-screen-inset}
@@ -67,7 +75,7 @@ This page shows the dependence of current density and Faradaic efficiency on pot
 ::: {.filters-container}
 
 ```{ojs filter-year}
-viewof startYear = Inputs.range(yearExtent, { label: "Start year", step: 1, value: yearExtent[0] })
+viewof selectedYearRange = yearRangeInput()
 ```
 
 ```{ojs filter-duration}
@@ -119,7 +127,8 @@ viewof yVar = Inputs.select(new Map([["Faradaic efficiency, FE (%)", "FE"], ["Cu
 filteredPotentialRows = potentialRows.filter(d =>
   selectedProducts.includes(d.Product) &&
   selectedPotentialTypes.includes(d.PotentialType) &&
-  d.Year >= startYear &&
+  d.Year >= selectedYearRange[0] &&
+  d.Year <= selectedYearRange[1] &&
   d.Stability >= Math.exp(minLogDuration) &&
   Number.isFinite(d.Potential) &&
   Number.isFinite(d[yVar])

@@ -76,6 +76,28 @@ form > label, .label:has(+ .form) {
   max-width: 15rem;
 }
 
+.plot-inputs .cell-output-display,
+.panel-input .cell-output-display {
+  overflow: visible !important;
+}
+
+.plot-inputs div[id^="scope-"],
+.panel-input div[id^="scope-"] {
+  min-width: 15rem;
+  max-width: 15rem;
+  overflow: visible;
+}
+
+.plot-inputs div[id^="scope-"] *,
+.panel-input div[id^="scope-"] * {
+  scrollbar-width: none;
+}
+
+.plot-inputs div[id^="scope-"] *::-webkit-scrollbar,
+.panel-input div[id^="scope-"] *::-webkit-scrollbar {
+  display: none;
+}
+
 .plot-inputs input[type="number"] {
   min-width: 5rem;
 }
