@@ -38,6 +38,10 @@ python -m http.server 8000 -d _site
 R dependencies are tracked in `DESCRIPTION`. The project does not require an
 external data API token or `renv.lock`.
 
+## Source file for the macroeconomic figure
+
+This repository also includes `resources/data/market_cost.xlsx`, which serves as the source file for Fig. 1B, *Macroeconomic constraints in eCO2R*, in the article *Electrocatalytic CO2 conversion: pathway to pragmatism*.
+
 ## Reference
 
 ```powershell
