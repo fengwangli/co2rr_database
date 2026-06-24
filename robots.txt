@@ -1,1 +1,1 @@
-Sitemap: https://fengwangli.github.io/co2rr_database/sitemap.xml
+Sitemap: https://science.co2rr.org/sitemap.xml
